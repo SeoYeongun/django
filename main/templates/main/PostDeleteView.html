@@ -1,0 +1,18 @@
+{% extends '../main/base.html' %}
+
+{% block content %}
+  {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+  {% endif %}
+
+  <h2>Are you sure you want to delete "{{ post.title }}"?</h2>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirm Delete</button>
+  </form>
+  <a href="{% url 'post_detail' post.pk %}">Cancel</a>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<div class="p-3 mb-2 bg-body text-dark container">
+    <h1></h1>
+    {% if posts %}
+        <div class="d-flex flex-wrap">
+            {% for post in posts %}
+                <div class="card m-2" style="width: 18rem;">
+                    <a href="{% url 'post_detail' post.id %}" class="text-decoration-none text-dark">
+                        {% if post.image %}
+                            <img src="{{ post.image.url }}" class="card-img-top" alt="{{ post.postname }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ post.postname }}</h5>
+                            <div style="overflow: auto; max-height: 100px;">
+                                {% if post.contents %}
+                                    <p class="card-text">{{ post.contents }}</p>
+                                {% else %}
+                                    <p class="card-text">내용이 없습니다.</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- 좋아요 기능 추가 -->
+                            <div class="d-flex align-items-center mt-3">
+                                <form method="POST" action="{% url 'like_post' post.id %}">
+                                {% csrf_token %}
+                                {% if user.is_authenticated %}
+                                    <button type="submit" class="btn btn-link p-0 like-btn" data-post-id="{{ post.id }}">
+                                    {% if user in post.likes.all %}
+                                        <i class="fas fa-heart text-danger"></i>
+                                    {% else %}
+                                        <i class="far fa-heart text-muted"></i>
+                                    {% endif %}
+                                </button>
+                            {% endif %}
+                        </form>
+                        <!-- 좋아요 개수 표시 -->
+                        <span class="ms-2" id="like-count-{{ post.id }}">{{ post.total_likes }} Likes</span>
+                    </div>
+
+                            <a href="{% url 'post_detail' post.id %}" class="btn btn-primary mt-3">Go somewhere</a>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- 페이징 처리 -->
+        <div class="pagination mt-3">
+            <span class="step-links">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1">&laquo; 처음</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">이전</a>
+                {% endif %}
+
+                <span class="current">
+                    페이지 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}">다음</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}">마지막 &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+    {% else %}
+        <p>게시물이 없습니다.</p>
+    {% endif %}
+</div>
+
+<!-- jQuery와 AJAX 코드 추가 -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // 좋아요 버튼 클릭 시 AJAX 요청 보내기
+    $('.like-btn').click(function(event) {
+        event.preventDefault();  // 기본 행동인 페이지 이동을 방지
+
+        var postId = $(this).data('post-id');  // post_id를 data 속성으로 전달
+        var likeIcon = $(this).find('i');
+        var likeCountSpan = $('#like-count-' + postId);
+
+        $.ajax({
+            url: '/likes/' + postId + '/',  // 'like' URL로 요청 (post_id를 포함)
+            type: 'POST',  // POST 요청으로 변경
+            data: {
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),  // CSRF 토큰
+                next: window.location.pathname  // 현재 페이지 URL을 next 파라미터로 전달
+            },
+            success: function(response) {
+                // 좋아요 상태 업데이트
+                if (response.likes) {
+                    likeIcon.removeClass('far text-muted').addClass('fas text-danger');
+                } else {
+                    likeIcon.removeClass('fas text-danger').addClass('far text-muted');
+                }
+                // 좋아요 개수 업데이트
+                likeCountSpan.text(response.like_count + ' Likes');
+            },
+            error: function(xhr, status, error) {
+                console.log('AJAX 요청 실패:', error);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

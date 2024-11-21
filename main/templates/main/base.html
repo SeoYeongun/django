@@ -1,0 +1,176 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}My Site{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        * {
+            font-family: Playfair Display, serif;
+        }
+        body {
+            display: flex; /* Flexbox 사용 */
+            flex-direction: column; /* 세로 방향으로 정렬 */
+            height: 100vh; /* 전체 뷰포트 높이 */
+            margin: 0; /* 기본 margin 제거 */
+        }
+        header {
+            background-color: white;
+            position: sticky; /* 헤더를 고정 */
+            top: 0; /* 상단에 위치 */
+            z-index: 1000; /* 다른 요소 위에 표시되도록 z-index 설정 */
+        }
+        main {
+            flex: 1; /* main이 나머지 공간을 차지하도록 설정 */
+        }
+        .nav-link {
+            color: black !important;
+        }
+        .nav-link:hover {
+            color: gray !important; /* 호버 시 색상 변경 (선택 사항) */
+        }
+        footer {
+            padding: 10px 0; /* 여백 추가 */
+        }
+        /* Modal background color adjustment */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5); /* 배경 어둡기 */
+        }
+    </style>
+</head>
+<body>
+    {% block header %}
+        <header>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;" class="container">
+                <a href="javascript:history.back()" class="btn btn-link text-dark">
+                    <i class="bi bi-chevron-left" style="font-size: 1.5rem;"></i> <!-- 뒤로가기 아이콘 -->
+                </a>
+                <h1 style="margin: 0; text-align: center; flex-grow: 1;">
+                    <a href="{% url 'home' %}" style="text-decoration: none; color: black;">MINE</a>
+                </h1>
+                <i class="bi bi-person" style="font-size: 1.5rem; margin-left: 10px;" data-bs-toggle="modal" data-bs-target="#loginModal"></i> <!-- 사람 아이콘, 모달 트리거 -->
+            </div>
+            <!-- Modal -->
+            <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="loginModalLabel">login stat</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            {% if user.is_authenticated %}
+                                <p>Hello!, <strong>{{ user.username }}</strong></p>
+                                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">Logout</button>
+                                </form>
+                            {% else %}
+                                <p>User not logged in.</p>
+                                <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                                <a href="{% url 'signup' %}" class="btn btn-secondary">Register</a>
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav class="navbar navbar-expand-lg border-bottom">
+                <div class="container">
+                    <a class="navbar-brand" href="#">
+                        {% if user.is_authenticated %}
+                            {{ user.username }}
+                        {% else %}
+                            Anonymous
+                        {% endif %}
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'post_list' %}">Movie</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'post_create' %}">Write</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'audio_list' %}">Drama</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'audio_upload' %}">Audio Upload</a>
+                            </li>
+                        </ul>
+                        <!-- 검색 바 -->
+                        <form method="get" class="d-flex" role="search">
+                            <input class="form-control me-2" type="search" name="q" placeholder="Search" aria-label="Search" style="border: 2px solid black;" value="{{ request.GET.q|default_if_none:'' }}">
+                            <button class="btn btn-outline-success" type="submit" style="color: black; border: 2px solid black; background-color: white;">
+                                <i class="bi bi-search" style="color: black;"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </nav>
+        </header>
+    {% endblock %}
+    <main> <!-- main 요소에 flex: 1을 적용하여 나머지 공간 차지 -->
+        {% block content %}
+        <div class="container h-100"> <!-- container도 높이를 100%로 설정 -->
+            <div class="p-3 mb-2 text-dark"> <!-- 배경 색상 및 높이 설정 -->
+                <!-- Content here -->
+                {% if user.is_authenticated %}
+                    <p>Hello!, <strong>{{ user.username }}</strong></p>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-sm me-2">Login</a>
+                    <a href="{% url 'signup' %}" class="btn btn-secondary btn-sm">Register</a>
+                {% endif %}
+                <section>
+                    {% if user.is_authenticated %}
+                        <!-- 로그인된 사용자에 대한 내용 -->
+                        <h6>Posts and search results written by <strong>{{ user.username }}</strong></h6>
+                        {% if posts %}
+                            {% for post in posts %}
+                                <div>
+                                    <h3><a href="{% url 'post_detail' post.pk %}">{{ post.postname }}</a></h3>
+                                    <p>{{ post.contents|truncatewords:20 }}</p>
+                                    <small>Author: {{ post.author }}, Creation date: {{ post.created_at }}</small>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>There are no posts written</p>
+                        {% endif %}
+                    {% else %}
+                        <!-- 비로그인 사용자에 대한 내용 -->
+                        <p>Many features of this website require you to log in. Click the button below to log in or create a new account.</p>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </main>
+    {% endblock %}
+    <footer>
+        <div class="d-flex justify-content-center">
+            <p>&copy; 2024 My Blog</p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+</body>
+</html> 

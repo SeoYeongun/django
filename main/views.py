@@ -14,103 +14,18 @@ from django.db.models import Q
 from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+import requests
+from django.http import JsonResponse
+from django.conf import settings
+from django.shortcuts import render
+from datetime import datetime
+from django.core.paginator import Paginator
+import random
 
 class UserPostListView(ListView):
     model = Post
     template_name = 'main/base.html'  # 메인 페이지 템플릿 사용
     context_object_name = 'posts'
-    paginate_by = 10  # 페이지당 게시물 수 설정
-
-    def get_queryset(self):
-        # 기본값으로 모든 게시물을 반환
-        query = self.request.GET.get('q', '').strip()  # 기본값을 ''로 설정하고 앞뒤 공백 제거
-        print(f'Search query: "{query}"')  # 검색어 출력 (디버깅용)
-
-        # 검색어가 있는 경우 검색 결과 반환
-        if query:
-            return Post.objects.filter(
-                Q(postname__icontains=query) | Q(contents__icontains=query)
-            ).distinct().order_by('-created_at')
-
-        # 로그인한 사용자일 경우 사용자 게시물 반환
-        if self.request.user.is_authenticated:
-            user_posts = Post.objects.filter(author=self.request.user)
-            return user_posts.distinct().order_by('-created_at')
-
-        # 비로그인 사용자에게는 모든 게시물 반환
-        return Post.objects.all().order_by('-created_at')
-
-class MoviePostCreateView(CreateView, LoginRequiredMixin):
-    model = Post
-    form_class = PageForm
-    template_name = 'main/PostCreateView.html'
-    success_url = reverse_lazy('post_list')
-    
-    def form_valid(self, form):
-        form.instance.author = self.request.user  # 현재 사용자 설정
-        return super().form_valid(form)  # 폼 유효성 검사 후 저장
-
-class MoviePostListView(ListView):
-    model = Post
-    template_name = 'main/PostListView.html'
-    context_object_name = 'posts'
-    paginate_by = 10
-
-class MoviePostDetailView(DetailView):
-    model = Post
-    template_name = 'main/PostDetailView.html'
-    context_object_name = 'post'
-
-    def post(self, request, *args, **kwargs):
-        post = self.get_object()  # 현재 게시물 객체 가져오기
-
-        # 좋아요 처리
-        if 'like' in request.POST:
-            if post.likes.filter(id=request.user.id).exists():
-                post.likes.remove(request.user)  # 좋아요 취소
-            else:
-                post.likes.add(request.user)  # 좋아요 추가
-            # 좋아요 상태가 변경된 후 페이지 새로 고침
-            return redirect('post_detail', pk=post.pk)
-
-        # 댓글 작성 처리
-        elif 'content' in request.POST:  # 'content'가 있는 경우 댓글 작성 처리
-            content = request.POST.get('content')
-            if content:
-                comment = Comment.objects.create(
-                    post=post,
-                    author=request.user if request.user.is_authenticated else None,
-                    content=content
-                )
-                comment.save()
-                return redirect('post_detail', pk=post.pk)  # 댓글 작성 후 페이지 새로 고침
-
-        # 잘못된 경우 기본 리디렉션
-        return redirect('post_detail', pk=post.pk)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # 게시물에 대한 댓글 가져오기
-        context['comments'] = self.object.comments.all()  # 게시물에 달린 댓글
-        context['form'] = CommentForm()  # 댓글 작성 폼 추가
-        return context
-
-class MoviePostDeleteView(LoginRequiredMixin, DeleteView):
-    model = Post
-    template_name = 'main/PostDeleteView.html'
-    context_object_name = 'post'
-    success_url = reverse_lazy('post_list')
-
-    def get(self, request, *args, **kwargs):
-        post = self.get_object()
-        if post.author != request.user:
-            messages.error(request, '이 게시물을 삭제할 권한이 없습니다.')
-            return redirect('post_detail', pk=post.pk)  # 권한이 없으면 상세 페이지로 리디렉션
-        return super().get(request, *args, **kwargs)  # 권한이 있으면 삭제 확인 페이지를 보여줌
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, '게시물이 삭제되었습니다.')
-        return super().delete(request, *args, **kwargs)  # 삭제 진행
         
 class SignupView(CreateView):
     form_class = UserCreationForm
@@ -130,42 +45,7 @@ class LoginView(AuthLoginView):
 
 class LogoutView(AuthLogoutView):
     next_page = reverse_lazy('home')  # 로그아웃 후 이동할 URL
-
-# Audio
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView
-from .models import Audio
-from .forms import AudioForm
-
-
-class AudioUploadView(LoginRequiredMixin, CreateView):
-    model = Audio
-    fields = ['title', 'audio_file', 'description']
-    template_name = 'main/audio_upload.html'
-    success_url = reverse_lazy('audio_list')
-
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super().form_valid(form)
-
-class DramaListView(ListView):
-    model = Audio
-    template_name = 'main/audio_list.html'
-    context_object_name = 'audios'
-
-
-class AudioPostDeleteView(LoginRequiredMixin, DeleteView):
-    model = Audio
-    template_name = 'main/audio_post_confirm_delete.html'
-    context_object_name = 'audio'
-    success_url = reverse_lazy('audio_list') 
-
-    def get_queryset(self):
-        # 현재 로그인한 사용자가 본인 게시물만 삭제할 수 있도록 필터링
-        queryset = super().get_queryset()
-        return queryset.filter(author=self.request.user)
     
-
 @login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)  # post_id를 사용하여 Post 객체 가져오기
@@ -184,3 +64,88 @@ def like_post(request, post_id):
 
     # GET 요청에 대해선 처리하지 않음 (없으면 404 오류 발생)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+
+
+def get_movie_list(page=1, items_per_page=100):
+    api_key = settings.MOVIE_API_KEY
+    url = f'http://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieList.json?key={api_key}&curPage={page}&itemPerPage={items_per_page}'
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        movies = data.get('movieListResult', {}).get('movieList', [])
+        
+        # 개봉일이 있는 영화만 최신순으로 정렬
+        movies_with_open_date = [movie for movie in movies if movie.get('openDt') and is_valid_date(movie.get('openDt'))]
+        sorted_movies = sorted(movies_with_open_date, key=lambda x: parse_date(x.get('openDt')), reverse=True)
+
+        # 개봉일이 없는 영화는 랜덤으로 추가
+        movies_without_open_date = [movie for movie in movies if not movie.get('openDt')]
+
+        # 랜덤으로 개봉일 없는 영화와 최신 개봉일 영화들을 합침
+        all_movies = sorted_movies + random.sample(movies_without_open_date, len(movies_without_open_date))  # 랜덤 샘플링
+        return all_movies
+
+    return []
+
+def parse_date(date_str):
+    # openDt가 비어있거나 형식이 잘못된 경우 처리
+    if not date_str or len(date_str) != 8:
+        return None  # 잘못된 날짜는 None으로 처리
+    
+    try:
+        # openDt를 datetime 객체로 변환
+        return datetime.strptime(date_str, '%Y%m%d')
+    except ValueError:
+        # 형식이 잘못된 경우 None 반환
+        return None
+
+def is_valid_date(date_str):
+    # 날짜가 잘못된 형식인 경우를 필터링
+    try:
+        # 날짜가 유효한지 확인
+        datetime.strptime(date_str, '%Y%m%d')
+        return True
+    except ValueError:
+        return False
+
+def movie_list(request):
+    # 첫 번째 페이지 데이터를 가져오기
+    page_number = int(request.GET.get('page', 1))
+    movies = get_movie_list(page=page_number, items_per_page=100)
+
+    # 영화 목록 페이지네이션 처리
+    paginator = Paginator(movies, 100)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'main/movie-list.html', {'page_obj': page_obj})
+
+def load_more_movies(request):
+    # AJAX로 요청된 페이지 번호 받기
+    page_number = int(request.GET.get('page', 1))
+    movies = get_movie_list(page=page_number, items_per_page=100)
+    
+    # 영화 데이터를 JSON 형식으로 반환
+    return JsonResponse({'movies': movies})
+
+def get_daily_box_office(date):
+    api_key = settings.MOVIE_API_KEY
+    url = f'http://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/searchDailyBoxOfficeList.json?key={api_key}&targetDt={date}'
+    
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return data.get('boxOfficeResult', {}).get('dailyBoxOfficeList', [])
+    return []
+
+def daily_box_office(request):
+    today = datetime.now().strftime('%Y%m%d')  # 오늘 날짜를 YYYYMMDD 형식으로
+    movies = get_daily_box_office(today)
+    
+    paginator = Paginator(movies, 10)  # 한 페이지에 10개 영화
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'main/daily-box-office.html', {'page_obj': page_obj})

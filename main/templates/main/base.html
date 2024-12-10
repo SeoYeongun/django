@@ -53,7 +53,7 @@
                     <i class="bi bi-chevron-left" style="font-size: 1.5rem;"></i> <!-- 뒤로가기 아이콘 -->
                 </a>
                 <h1 style="margin: 0; text-align: center; flex-grow: 1;">
-                    <a href="{% url 'home' %}" style="text-decoration: none; color: black;">MINE</a>
+                    <a href="{% url 'home' %}" style="text-decoration: none; color: black;">MOVIE-BOX</a>
                 </h1>
                 <i class="bi bi-person" style="font-size: 1.5rem; margin-left: 10px;" data-bs-toggle="modal" data-bs-target="#loginModal"></i> <!-- 사람 아이콘, 모달 트리거 -->
             </div>
@@ -102,16 +102,16 @@
                                 <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'post_list' %}">Movie</a>
+                                <a class="nav-link" href="{% url 'movie_list' %}">Movie-List</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'post_create' %}">Write</a>
+                                <a class="nav-link" href="{% url 'daily_box_office' %}">Daily-Box-Office</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'audio_list' %}">Drama</a>
+                                <a class="nav-link" href="{% url 'home' %}">Drama</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'audio_upload' %}">Audio Upload</a>
+                                <a class="nav-link" href="{% url 'home' %}">Audio Upload</a>
                             </li>
                         </ul>
                         <!-- 검색 바 -->
@@ -145,19 +145,8 @@
                     {% if user.is_authenticated %}
                         <!-- 로그인된 사용자에 대한 내용 -->
                         <h6>Posts and search results written by <strong>{{ user.username }}</strong></h6>
-                        {% if posts %}
-                            {% for post in posts %}
-                                <div>
-                                    <h3><a href="{% url 'post_detail' post.pk %}">{{ post.postname }}</a></h3>
-                                    <p>{{ post.contents|truncatewords:20 }}</p>
-                                    <small>Author: {{ post.author }}, Creation date: {{ post.created_at }}</small>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <p>There are no posts written</p>
-                        {% endif %}
-                    {% else %}
                         <!-- 비로그인 사용자에 대한 내용 -->
+                    {% else %}
                         <p>Many features of this website require you to log in. Click the button below to log in or create a new account.</p>
                     {% endif %}
                 </section>

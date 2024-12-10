@@ -55,6 +55,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'web.urls'
 
+MOVIE_API_KEY = 'b44fdec16917ebb572412d2fecb13768'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
